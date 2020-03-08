@@ -41,7 +41,7 @@ void vertxStart() {
     })
 
     println "starting"
-    server.requestHandler(router).listen(8081)
+    server.requestHandler(router).listen(8080)
 }
 
 //stopping verticle and httpserver

@@ -7,6 +7,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.impl.Deployment;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.shell.ShellService;
 import io.vertx.ext.shell.ShellServiceOptions;
 import io.vertx.ext.shell.cli.Completion;
@@ -14,7 +16,8 @@ import io.vertx.ext.shell.command.Command;
 import io.vertx.ext.shell.command.CommandBuilder;
 import io.vertx.ext.shell.command.CommandProcess;
 import io.vertx.ext.shell.command.CommandRegistry;
-import io.vertx.ext.shell.term.HttpTermOptions;
+import io.vertx.ext.shell.command.base.FileSystemLs;
+import io.vertx.ext.shell.term.TelnetTermOptions;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +26,7 @@ import java.util.stream.StreamSupport;
 
 public class Main {
 
+    private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
     private static void handlerCompletionMockId(Completion completion) {
         Vertx vertx = completion.vertx();
         if (completion.lineTokens().isEmpty()) {
@@ -94,14 +98,15 @@ public class Main {
         Promise<Void> promiseUndeploy = Promise.promise();
         Promise<String> promiseDeploy = Promise.promise();
 
-        String identifier = vertx.getDeployment(id).verticleIdentifier();
+        final Deployment deployment = vertx.getDeployment(id);
+        String identifier = deployment.verticleIdentifier();
         vertx.undeploy(process.args().get(0), promiseUndeploy);
         vertx.deployVerticle(identifier, promiseDeploy);
         Future<String> done = promiseUndeploy.future().compose(v -> promiseDeploy.future());
 
         done.setHandler(ar -> {
             if (ar.failed()) {
-                ar.cause().printStackTrace();
+                LOGGER.info("error on deploy", ar.cause());
                 process.write("failed to deploy verticle\n");
                 process.end();
                 return;
@@ -111,7 +116,7 @@ public class Main {
             vertx.sharedData()
                     .<String, JsonArray>getLocalMap("local")
                     .put("mocks", arr);
-            process.write(ar.result()+"\n");
+            process.write(ar.result() + "\n");
             process.end();
         });
     }
@@ -127,7 +132,7 @@ public class Main {
         vertx.deployVerticle(process.args().get(0), promise);
         promise.future().setHandler(ar -> {
             if (ar.failed()) {
-                ar.cause().printStackTrace();
+                LOGGER.fatal("error on deploy", ar.cause());
                 process.write("failed to deploy verticle\n");
                 process.end();
                 return;
@@ -152,7 +157,7 @@ public class Main {
         vertx.undeploy(process.args().get(0), promise);
         promise.future().setHandler(ar -> {
             if (ar.failed()) {
-                ar.cause().printStackTrace();
+                LOGGER.error("error on undeploy", ar.cause());
                 process.write("failed to undeploy mock verticle");
                 process.end();
                 return;
@@ -194,7 +199,7 @@ public class Main {
             System.out.println("after join " + ar.result().list().size());
             if (ar.failed()) {
                 process.write("error on undeploy verticles");
-                ar.cause().printStackTrace();
+                LOGGER.error("error on undeploy", ar.cause());
             } else {
                 list.clear();
                 process.write("undeploy verticles successfully");
@@ -229,9 +234,11 @@ public class Main {
     }
 
     public static void main(String[] args) {
+
+        System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.SLF4JLogDelegateFactory");
         Vertx vertx = Vertx.vertx();
         ShellService service = ShellService.create(vertx, new ShellServiceOptions()
-                .setHttpOptions(new HttpTermOptions().setPort(8001))
+                .setTelnetOptions(new TelnetTermOptions().setPort(8001))
         );
 
         CommandRegistry registry = CommandRegistry.getShared(vertx);
@@ -242,6 +249,7 @@ public class Main {
 
         command = CommandBuilder.command("deploy-mock")
                 .processHandler(Main::handlerDeployMock)
+                .completionHandler(new FileSystemLs()::complete)
                 .build(vertx);
         registry.registerCommand(command);
 

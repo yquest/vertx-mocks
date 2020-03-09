@@ -1,17 +1,17 @@
 import io.vertx.core.http.HttpMethod
-import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.core.json.JsonObject
+import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 
-HttpServer server
-
 void vertxStart() {
+    logger = LoggerFactory.getLogger('my-verticle')
     server = vertx.createHttpServer()
     Router router = Router.router(vertx)
     router.get("/example/get/").handler({ rc ->
+        logger.info('enter the route')
         HttpServerResponse response = rc.response()
         response.putHeader("content-type", "application/json")
         response.end(
@@ -40,13 +40,12 @@ void vertxStart() {
         }
     })
 
-    println "starting"
-    server.requestHandler(router).listen(8080)
+    logger.info "starting"
+    server.requestHandler(router).listen(8081)
 }
 
-//stopping verticle and httpserver
 void vertxStop() {
     server.close()
-    println "stopping"
+    logger.info "stopping"
 }
 

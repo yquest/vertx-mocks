@@ -4,9 +4,11 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.Deployment;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.logging.SLF4JLogDelegateFactory;
@@ -29,7 +31,6 @@ public class Main {
     static {
         System.setProperty(LoggerFactory.LOGGER_DELEGATE_FACTORY_CLASS_NAME, SLF4JLogDelegateFactory.class.getCanonicalName());
         LoggerFactory.initialise();
-
     }
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
@@ -183,11 +184,6 @@ public class Main {
 
     private static void handlerUndeployAll(CommandProcess process) {
         Vertx vertx = process.vertx();
-        if (process.args().isEmpty()) {
-            process.write("missing the mock verticle\n");
-            process.end();
-            return;
-        }
         JsonArray list = vertx.sharedData()
                 .<String, JsonArray>getLocalMap("local")
                 .computeIfAbsent("mocks", k -> new JsonArray());
@@ -244,9 +240,12 @@ public class Main {
         System.setProperty(LoggerFactory.LOGGER_DELEGATE_FACTORY_CLASS_NAME, SLF4JLogDelegateFactory.class.getCanonicalName());
         LoggerFactory.initialise();
         Vertx vertx = Vertx.vertx();
-        ShellService service = ShellService.create(vertx, new ShellServiceOptions()
-                .setTelnetOptions(new TelnetTermOptions().setPort(8001))
-        );
+
+        Promise<Buffer> handlerConf = Promise.promise();
+        vertx.fileSystem().readFile("./conf/conf.json", handlerConf);
+        Future<JsonObject> handledConf = handlerConf
+                .future()
+                .map(Buffer::toJsonObject);
 
         CommandRegistry registry = CommandRegistry.getShared(vertx);
         Command command = CommandBuilder.command("undeploy-all-mocks")
@@ -277,6 +276,20 @@ public class Main {
                 .build(vertx);
         registry.registerCommand(command);
 
-        service.start();
+        handledConf.setHandler(ar -> {
+            if (ar.failed()) {
+                LOGGER.error("error on load conf", ar.cause());
+            } else {
+                JsonObject app = ar.result().getJsonObject("app");
+                vertx.sharedData()
+                        .getLocalMap("local")
+                        .put("app", app);
+                JsonObject telnet = ar.result().getJsonObject("telnet");
+                ShellService service = ShellService.create(vertx, new ShellServiceOptions()
+                        .setTelnetOptions(new TelnetTermOptions().setPort(telnet.getInteger("port")))
+                );
+                service.start();
+            }
+        });
     }
 }

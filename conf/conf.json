@@ -1,0 +1,10 @@
+{
+  "telnet": {
+    "port": 7000
+  },
+  "app": {
+    "http_server":{
+      "port": 8000
+    }
+  }
+}

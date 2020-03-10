@@ -9,7 +9,23 @@ version '1.0-SNAPSHOT'
 sourceCompatibility = 1.8
 
 application {
+    applicationDefaultJvmArgs = ['-Dlogback.configurationFile=./conf/logback.xml']
     mainClassName = 'pt.fabm.Main'
+}
+
+task createConf {
+    def conf = file("$projectDir/conf")
+    outputs.dir conf
+}
+
+distributions{
+    main{
+        contents {
+            from(createConf) {
+                into 'conf'
+            }
+        }
+    }
 }
 
 repositories {

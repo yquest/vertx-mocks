@@ -12,7 +12,7 @@
         </encoder>
     </appender>
 
-    <root level="fatal">
+    <root level="DEBUG">
         <appender-ref ref="FILE" />
     </root>
 </configuration>

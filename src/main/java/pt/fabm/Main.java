@@ -9,6 +9,7 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.logging.SLF4JLogDelegateFactory;
 import io.vertx.ext.shell.ShellService;
 import io.vertx.ext.shell.ShellServiceOptions;
 import io.vertx.ext.shell.cli.Completion;
@@ -25,8 +26,14 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class Main {
+    static {
+        System.setProperty(LoggerFactory.LOGGER_DELEGATE_FACTORY_CLASS_NAME, SLF4JLogDelegateFactory.class.getCanonicalName());
+        LoggerFactory.initialise();
+
+    }
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
+
     private static void handlerCompletionMockId(Completion completion) {
         Vertx vertx = completion.vertx();
         if (completion.lineTokens().isEmpty()) {
@@ -234,8 +241,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
-
-        System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.SLF4JLogDelegateFactory");
+        System.setProperty(LoggerFactory.LOGGER_DELEGATE_FACTORY_CLASS_NAME, SLF4JLogDelegateFactory.class.getCanonicalName());
+        LoggerFactory.initialise();
         Vertx vertx = Vertx.vertx();
         ShellService service = ShellService.create(vertx, new ShellServiceOptions()
                 .setTelnetOptions(new TelnetTermOptions().setPort(8001))

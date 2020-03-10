@@ -41,7 +41,9 @@ void vertxStart() {
     })
 
     logger.info "starting"
-    server.requestHandler(router).listen(8081)
+    JsonObject app = vertx.sharedData().getLocalMap("local")["app"]
+    int port = app.getJsonObject("http_server").getInteger("port");
+    server.requestHandler(router).listen(port)
 }
 
 void vertxStop() {

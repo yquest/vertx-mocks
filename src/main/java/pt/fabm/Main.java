@@ -35,6 +35,21 @@ public class Main {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
+    private static void reloadAppJson(CommandProcess process) {
+        Vertx vertx = process.vertx();
+        vertx.fileSystem().readFile("./conf/app.json", ar->{
+            if(ar.failed()){
+                process.write("error on load app.json\n");
+                process.end();
+                return;
+            }
+            JsonObject json = ar.result().toJsonObject();
+            vertx.sharedData().getLocalMap("local").put("app",json);
+            process.write("reload json successfully\n");
+            process.end();
+        });
+    }
+
     private static void handlerCompletionMockId(Completion completion) {
         Vertx vertx = completion.vertx();
         if (completion.lineTokens().isEmpty()) {
@@ -273,6 +288,11 @@ public class Main {
 
         command = CommandBuilder.command("list-mocks")
                 .processHandler(Main::listMocks)
+                .build(vertx);
+        registry.registerCommand(command);
+
+        command = CommandBuilder.command("reload-app-json")
+                .processHandler(Main::reloadAppJson)
                 .build(vertx);
         registry.registerCommand(command);
 

@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClassName = 'pt.fabm.Main'
+}
+
+dependencies {
+    runtime "io.vertx:vertx-lang-groovy:3.8.5"
+    compileOnly "io.vertx:vertx-shell:3.8.5"
+    runtime 'ch.qos.logback:logback-core:1.2.3'
+    runtime 'ch.qos.logback:logback-classic:1.2.3'
+
+    testImplementation group: 'io.vertx', name:'vertx-junit5', version: '3.8.5'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
+}

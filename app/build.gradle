@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClassName = 'pt.fabm.Main'
+}
+
+task runApp(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    String loggerImp = '-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory'
+    String serviceVerticlesPath = '-DPATH_TO_SAVE_SERVICES_MAP=map.json'
+    jvmArgs([loggerImp, serviceVerticlesPath])
+
+    main = 'pt.fabm.Main'
+}
+
+dependencies {
+    implementation "io.vertx:vertx-service-factory:3.8.5"
+    implementation "io.vertx:vertx-lang-groovy:3.8.5"
+    implementation "io.vertx:vertx-shell:3.8.5"
+    implementation 'ch.qos.logback:logback-core:1.2.3'
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.28.2'
+    testImplementation group: 'io.vertx', name: 'vertx-junit5', version: '3.8.5'
+    testRuntime 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
+}

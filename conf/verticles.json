@@ -1,0 +1,18 @@
+[
+  {
+    "name": "main",
+    "main": "pt.pt.fabm.MainVerticle",
+    "options": {
+      "isolationGroup": "mocks",
+      "extraClasspath": ["../example/build/libs/example.jar"],
+      "config": {
+        "port": 8081,
+        "host": "localhost"
+      }
+    }
+  },
+  {
+    "name": "groovy",
+    "main": "../examples/my-verticle.groovy"
+  }
+]

@@ -2,15 +2,28 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 
 void vertxStart() {
     logger = LoggerFactory.getLogger('my-verticle')
-    server = vertx.createHttpServer()
-    Router router = Router.router(vertx)
-    router.get("/example/get/").handler({ rc ->
+
+    vertx.eventBus().request('router.bus', null) { ar ->
+        logger.info("loaded router")
+        if (ar.succeeded()) {
+            loadRouter(ar.result().body() as Router)
+        } else {
+            logger.error(ar.cause())
+        }
+    }
+
+    logger.info "starting"
+}
+
+void loadRouter(Router routerLocal) {
+    logger.info("successfully loaded router")
+    router = routerLocal
+    route0 = router.get("/example/get/").handler({ rc ->
         logger.info('enter the route')
         HttpServerResponse response = rc.response()
         response.putHeader("content-type", "application/json")
@@ -21,8 +34,8 @@ void vertxStart() {
         )
     })
 
-    Route route = router.route().method(HttpMethod.POST).method(HttpMethod.PUT)
-    route.path("/example/post-and-put").handler(BodyHandler.create()).handler({ rc ->
+    route1 = router.route().method(HttpMethod.POST).method(HttpMethod.PUT)
+    route1.path("/example/post-and-put").handler(BodyHandler.create()).handler({ rc ->
         def jsonBody = rc.bodyAsJson
         def response = rc.response()
 
@@ -40,12 +53,13 @@ void vertxStart() {
         }
     })
 
-    logger.info "starting"
-    server.requestHandler(router).listen(8081)
 }
 
 void vertxStop() {
-    server.close()
+    if (getBinding().hasVariable('router')) {
+        route0.remove()
+        route1.remove()
+    }
     logger.info "stopping"
 }
 

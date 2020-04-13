@@ -1,0 +1,12 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly "io.vertx:vertx-lang-groovy:$vertxVersion"
+    compileOnly "io.vertx:vertx-shell:$vertxVersion"
+}

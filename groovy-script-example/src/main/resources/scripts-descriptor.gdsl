@@ -1,0 +1,7 @@
+def ctx = context(pathRegexp:'.*groovy-example\\.groovy',scope: scriptScope())
+contributor(ctx) {
+    property(name: 'vertx', type: 'io.vertx.core.Vertx')
+    property(name: 'logger', type: 'io.vertx.core.logging.Logger')
+    property(name: 'route0', type: 'io.vertx.ext.web.Route')
+    property(name: 'route1', type: 'io.vertx.ext.web.Route')
+}

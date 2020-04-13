@@ -2,3 +2,4 @@ rootProject.name = 'vertx-mocks'
 
 include 'app'
 include 'example'
+include 'groovy-script-example'

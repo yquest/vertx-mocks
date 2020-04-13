@@ -5,8 +5,8 @@ import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 
+logger = LoggerFactory.getLogger('my-verticle')
 void vertxStart() {
-    logger = LoggerFactory.getLogger('my-verticle')
 
     vertx.eventBus().request('router.bus', null) { ar ->
         logger.info("loaded router")
@@ -20,16 +20,15 @@ void vertxStart() {
     logger.info "starting"
 }
 
-void loadRouter(Router routerLocal) {
+void loadRouter(Router router) {
     logger.info("successfully loaded router")
-    router = routerLocal
     route0 = router.get("/example/get/").handler({ rc ->
         logger.info('enter the route')
         HttpServerResponse response = rc.response()
         response.putHeader("content-type", "application/json")
         response.end(
                 new JsonObject()
-                        .put("my", "json")
+                        .put("my", "json2")
                         .toBuffer()
         )
     })
@@ -56,10 +55,8 @@ void loadRouter(Router routerLocal) {
 }
 
 void vertxStop() {
-    if (getBinding().hasVariable('router')) {
-        route0.remove()
-        route1.remove()
-    }
+    route0.remove()
+    route1.remove()
     logger.info "stopping"
 }
 

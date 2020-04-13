@@ -1,4 +1,4 @@
-package pt.pt.fabm;
+package pt.fabm;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;

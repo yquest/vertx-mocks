@@ -1,19 +1,14 @@
 plugins {
     id 'java'
-    id 'application'
 }
 
 repositories {
     mavenCentral()
 }
 
-application {
-    mainClassName = 'pt.fabm.Main'
-}
-
 dependencies {
-    runtime "io.vertx:vertx-lang-groovy:3.8.5"
-    compileOnly "io.vertx:vertx-shell:3.8.5"
+    runtime "io.vertx:vertx-lang-groovy:$vertxVersion"
+    compileOnly "io.vertx:vertx-shell:$vertxVersion"
     runtime 'ch.qos.logback:logback-core:1.2.3'
     runtime 'ch.qos.logback:logback-classic:1.2.3'
 

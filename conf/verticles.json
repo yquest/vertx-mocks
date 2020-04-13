@@ -1,11 +1,11 @@
 [
   {
-    "name": "main",
-    "main": "pt.pt.fabm.MainVerticle",
+    "name": "server",
+    "main": "pt.fabm.MainVerticleServer",
     "options": {
-      "isolationGroup": "mocks",
+      "isolationGroup": "server",
       "extraClasspath": [
-        "example/build/libs/example.jar"
+        "example-server/build/libs/example-server.jar"
       ],
       "config": {
         "port": 8081,
@@ -14,7 +14,17 @@
     }
   },
   {
-    "name": "groovy",
+    "name": "java-route",
+    "main": "pt.fabm.JavaRoute",
+    "options": {
+      "isolationGroup": "java-route",
+      "extraClasspath": [
+        "example-route/build/libs/example-route.jar"
+      ]
+    }
+  },
+  {
+    "name": "groovy-route",
     "main": "groovy-script-example/src/main/resources/groovy-example.groovy"
   }
 ]

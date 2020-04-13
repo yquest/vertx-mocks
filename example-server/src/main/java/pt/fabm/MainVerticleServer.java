@@ -1,19 +1,17 @@
-package pt.pt.fabm;
+package pt.fabm;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 
 @SuppressWarnings("unused") //loaded by the class name
-public class MainVerticle extends AbstractVerticle {
-    private static Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
+public class MainVerticleServer extends AbstractVerticle {
+    private static Logger LOGGER = LoggerFactory.getLogger(MainVerticleServer.class);
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -23,6 +21,7 @@ public class MainVerticle extends AbstractVerticle {
     }
 
     private Future<Void> loadServerHttp() {
+
         vertx.eventBus().registerCodec(new RouterCodec());
         Future<HttpServer> future = Promise.<HttpServer>promise().future();
         HttpServer server = vertx.createHttpServer();

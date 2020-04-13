@@ -1,3 +1,5 @@
+import io.vertx.core.Future
+import io.vertx.core.Promise
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.core.json.JsonObject
@@ -6,13 +8,15 @@ import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 
 logger = LoggerFactory.getLogger('my-verticle')
-void vertxStart() {
 
+void vertxStart(Future<Void> future) {
     vertx.eventBus().request('router.bus', null) { ar ->
         logger.info("loaded router")
         if (ar.succeeded()) {
             loadRouter(ar.result().body() as Router)
+            future.handle(Future.succeededFuture())
         } else {
+            future.handle(Future.failedFuture(ar.cause()))
             logger.error(ar.cause())
         }
     }

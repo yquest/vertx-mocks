@@ -3,11 +3,15 @@ package pt.fabm.instances;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import pt.fabm.CachedReadFile;
+import pt.fabm.commands.ServicesDeployedJson;
 import pt.fabm.commands.TokenGetter;
 import pt.fabm.commands.node.FileWrapper;
 import pt.fabm.commands.node.NodeComplete;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import static pt.fabm.instances.AppContext.PATH_TO_SAVE;
 
@@ -20,7 +24,13 @@ public class DefaultInstance {
         };
         appContext.setVertx(vertx);
         appContext.setTokenGetter(tokenGetter);
-        if (Paths.get(PATH_TO_SAVE).toFile().exists()) {
+        if (
+                Optional.ofNullable(PATH_TO_SAVE)
+                        .map(Paths::get)
+                        .map(Path::toFile)
+                        .map(File::exists)
+                        .orElse(false)
+        ) {
             vertx.fileSystem().deleteBlocking(PATH_TO_SAVE);
         }
         appContext.setPathToSaveServices(new CachedReadFile<>(
@@ -30,7 +40,8 @@ public class DefaultInstance {
                         Buffer::toJsonObject
                 )
         );
-
+        appContext.setServicesDeployedJson(new ServicesDeployedJson() {
+        });
     }
 
     private static NodeComplete createNodeComplete(String path) {

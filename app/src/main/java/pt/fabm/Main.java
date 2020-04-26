@@ -6,7 +6,11 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.shell.ShellServer;
 import io.vertx.ext.shell.ShellService;
 import io.vertx.ext.shell.ShellServiceOptions;
+import io.vertx.ext.shell.cli.CliToken;
 import io.vertx.ext.shell.command.Command;
+import io.vertx.ext.shell.command.CommandBuilder;
+import io.vertx.ext.shell.system.Process;
+import io.vertx.ext.shell.term.HttpTermOptions;
 import io.vertx.ext.shell.term.TelnetTermOptions;
 import pt.fabm.commands.*;
 import pt.fabm.instances.AppContext;
@@ -15,6 +19,7 @@ import pt.fabm.instances.DefaultInstance;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 
 public class Main {
 
@@ -33,7 +38,11 @@ public class Main {
                 Command.create(vertx, ListServices.class),
                 Command.create(vertx, DeployService.class),
                 Command.create(vertx, ServicesDeployed.class),
-                Command.create(vertx, UndeployService.class)
+                Command.create(vertx, UndeployService.class),
+                Command.create(vertx, RedeployService.class),
+                CommandBuilder.command("stop").processHandler(e->{
+                    vertx.close();
+                }).build(vertx)
         ));
         server.shellHandler(e -> {
             final Path path = Paths.get("conf", "verticles.json");

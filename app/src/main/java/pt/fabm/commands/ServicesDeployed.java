@@ -27,7 +27,7 @@ public class ServicesDeployed extends AnnotatedCommand {
                     .map(Buffer::toJsonObject)
                     .onComplete(asyncFileRead);
         } else {
-            JsonObject ids = process.session().get("service-deploy-ids");
+            JsonObject ids = process.session().get(ServicesDeployedJson.SERVICE_DEPLOY_IDS);
             if (ids == null) {
                 process.write("no services deployed\n");
                 process.end();
@@ -35,8 +35,8 @@ public class ServicesDeployed extends AnnotatedCommand {
             asyncFileRead.handle(Future.succeededFuture(ids));
         }
 
-        asyncFileRead.future().onComplete(e->{
-            if(e.failed()){
+        asyncFileRead.future().onComplete(e -> {
+            if (e.failed()) {
                 process.write("error on read file check out the log file");
                 process.end();
                 return;

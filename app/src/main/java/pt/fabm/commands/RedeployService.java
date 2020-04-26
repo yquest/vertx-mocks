@@ -3,6 +3,7 @@ package pt.fabm.commands;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.cli.annotations.Argument;
 import io.vertx.core.cli.annotations.Description;
 import io.vertx.core.cli.annotations.Name;
@@ -21,65 +22,44 @@ import java.util.List;
 
 import static pt.fabm.instances.AppContext.PATH_TO_SAVE;
 
-@Name("service-undeploy")
-@Summary("Undeploy service")
-public class UndeployService extends AnnotatedCommand {
-    private static Logger LOGGER = LoggerFactory.getLogger(UndeployService.class);
+@Name("service-redeploy")
+@Summary("Redeploy service")
+public class RedeployService extends AnnotatedCommand {
+    private static Logger LOGGER = LoggerFactory.getLogger(RedeployService.class);
     private String name;
 
     @Argument(index = 0, argName = "name")
-    @Description("the service name")
-    @SuppressWarnings("unused")//used with reflexion
+    @Description("the verticle name")
+    @SuppressWarnings("unused") //used with reflexion
     public void setName(String name) {
         this.name = name;
     }
 
+
     @Override
     public void process(CommandProcess process) {
-        final ServicesDeployedJson servicesDeployedJson = AppContext.getInstance()
-                .getServicesDeployedJson();
-
-        servicesDeployedJson
-                .undeployService(process, name)
-                .flatMap(id ->
-                        servicesDeployedJson
-                                .unregisterServiceDeployed(process.session(), name, id)
-                )
-                .onFailure(e -> {
-                    if (e instanceof NoStackTraceThrowable) {
-                        process.write(e.getMessage() + "\n");
+        AppContext.getInstance()
+                .getServicesDeployedJson()
+                .redeployJson(process, name)
+                .onFailure(ex -> {
+                    if (ex instanceof NoStackTraceThrowable) {
+                        process.write(ex.getMessage() + "\n");
                     } else {
-                        process.write("error on try to undeploy\n");
-                        LOGGER.error(e);
+                        process.write(String.format("Error on redeploy %s check logs \n", name));
                     }
                     process.end();
                 })
-                .onSuccess(e -> {
-                    process.write("undeployed successfully\n");
+                .onSuccess(id -> {
+                    process.write(String.format("Redeploy with id %s\n", id));
                     process.end();
                 });
     }
 
     @Override
     public void complete(Completion completion) {
-        AppContext.getInstance().getServicesDeployedJson().getDeployedIds(completion.session())
-                .onFailure(e -> {
-                    completion.complete("", false);
-                    LOGGER.error(e);
-                })
-                .onSuccess(e -> {
-                    CompletionList completionList = new CompletionList(1, completion);
-                    completionList.handle(
-                            Future.succeededFuture(
-                                    new ArrayList<>(e.fieldNames())
-                            )
-                    );
-                });
-
-
-        /*
         Handler<AsyncResult<JsonObject>> handler = ar -> {
             if (ar.failed()) {
+                LOGGER.error(ar.cause());
                 completion.complete("", false);
                 return;
             }
@@ -100,11 +80,7 @@ public class UndeployService extends AnnotatedCommand {
                     .getCache()
                     .onComplete(handler);
         } else {
-            handler.handle(Future.succeededFuture(completion
-                            .session()
-                            .get(ServicesDeployedJson.SERVICE_DEPLOY_IDS)
-                    )
-            );
-        }*/
+            handler.handle(Future.succeededFuture(completion.session().get("service-deploy-ids")));
+        }
     }
 }

@@ -1,8 +1,11 @@
 package pt.fabm.instances;
 
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import pt.fabm.CachedReadFile;
+import pt.fabm.commands.ServicesDeployedJson;
 import pt.fabm.commands.TokenGetter;
 import pt.fabm.commands.node.NodeComplete;
 
@@ -20,10 +23,21 @@ public class AppContext {
     private Function<String, NodeComplete> nodeCompleteFactory;
     private TokenGetter tokenGetter;
     private CachedReadFile<JsonObject> pathToSaveFile;
+    private ServicesDeployedJson servicesDeployedJson;
     private Vertx vertx;
 
     public static AppContext getInstance() {
         return INSTANCE;
+    }
+
+    public static <T> Future<T> require(T obj, String message) {
+        Promise<T> promise = Promise.promise();
+        if (obj == null) {
+            promise.fail(message);
+        } else {
+            promise.complete(obj);
+        }
+        return promise.future();
     }
 
     void setNodeCompleteFactory(Function<String, NodeComplete> nodeCompleteFactory) {
@@ -56,5 +70,13 @@ public class AppContext {
 
     public Vertx getVertx() {
         return vertx;
+    }
+
+    void setServicesDeployedJson(ServicesDeployedJson servicesDeployedJson) {
+        this.servicesDeployedJson = servicesDeployedJson;
+    }
+
+    public ServicesDeployedJson getServicesDeployedJson() {
+        return servicesDeployedJson;
     }
 }

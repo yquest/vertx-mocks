@@ -1,0 +1,7 @@
+web:
+  host: localhost
+  port: ${web.port}
+telnet:
+  host: localhost
+  port: ${telnet.port}
+verticles: conf/verticles.json

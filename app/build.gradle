@@ -1,41 +1,18 @@
-plugins {
-    id 'java'
-    id 'application'
+test {
+    useJUnitPlatform()
+    workingDir(file("$resourcesBuildDir/app"))
 }
-
-sourceCompatibility = '1.8'
-
-repositories {
-    mavenCentral()
-}
-
-application {
-    mainClassName = 'pt.fabm.Main'
-}
-
-task createTmp() {
-    mkdir '../temp'
-}
-
-task runApp(type: JavaExec, group: 'application', dependsOn: createTmp) {
-    classpath = sourceSets.main.runtimeClasspath
-    String logbackConfFile = '-Dlogback.configurationFile=conf/logback.xml'
-    String loggerImp = '-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.SLF4JLogDelegateFactory'
-    String serviceVerticlesPath = '-DPATH_TO_SAVE_SERVICES_MAP=temp/map.json'
-    jvmArgs([logbackConfFile, loggerImp, serviceVerticlesPath])
-    workingDir file('..')
-    main = 'pt.fabm.Main'
-}
-
 dependencies {
-    implementation "io.vertx:vertx-service-factory:$vertxVersion"
-    implementation "io.vertx:vertx-lang-groovy:$vertxVersion"
-    implementation "io.vertx:vertx-shell:$vertxVersion"
-    implementation 'ch.qos.logback:logback-core:1.2.3'
-    implementation 'ch.qos.logback:logback-classic:1.2.3'
+    implementation 'com.google.dagger:dagger:2.4'
+    //testCompileOnly 'com.google.dagger:dagger:2.4'
+    annotationProcessor "com.google.dagger:dagger-compiler:2.4"
+    //testAnnotationProcessor "com.google.dagger:dagger-compiler:2.4"
 
+    implementation "pt.fabm.services:server:0.1"
+
+    testImplementation "io.vertx:vertx-web-client:$vertxVersion"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.28.2'
     testImplementation group: 'io.vertx', name: 'vertx-junit5', version: vertxVersion
-    testRuntime 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
 }

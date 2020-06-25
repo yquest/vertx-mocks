@@ -1,0 +1,22 @@
+def ctx = context(pathRegexp: '.*groovy-router-example\\.groovy', scope: scriptScope())
+contributor(ctx) {
+    property(name: 'route', type: 'java.lang.String')
+    property(name: 'logger', type: 'io.vertx.core.logging.Logger')
+    property(name: 'rc', type: 'io.vertx.ext.web.RoutingContext')
+    //Get the context for all closures
+    method(name: 'getRc', type: 'io.vertx.ext.web.RoutingContext')
+    method(name: 'setBodyAsJson', type: void, params: [body: Map])
+    method(name: 'setPath', type: void, params: [path: String])
+    method(name: 'setMethod', type: void, params: [method: 'io.vertx.core.http.HttpMethod'])
+
+    method(name: 'doRequest', type: void, params: [cl: { 'java.lang.String' }])
+
+    def call = enclosingCall(name: "doRequest")
+    if (call) {
+        delegatesTo(findClass('pt.fabm.CustomClosure'))
+    }
+
+
+    //pt.fabm.CustomClosure
+
+}

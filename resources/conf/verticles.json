@@ -1,0 +1,35 @@
+[
+  {
+    "name": "server",
+    "main": "pt.fabm.MainVerticleServer",
+    "options": {
+      "isolationGroup": "server",
+      "extraClasspath": [
+        "verticles/example-server.jar"
+      ],
+      "config": {
+        "port": 8081,
+        "host": "localhost"
+      }
+    }
+  },
+  {
+    "name": "java-route",
+    "main": "pt.fabm.JavaRoute",
+    "options": {
+      "isolationGroup": "java-route",
+      "extraClasspath": [
+        "verticles/example-route.jar"
+      ]
+    }
+  },
+  {
+    "name": "groovy-route",
+    "main": "verticles/groovy-example.groovy"
+  },
+  {
+    "name": "groovy-route2",
+    "service-type": "groovy-route-dsl",
+    "main": "verticles/groovy-router-example.groovy"
+  }
+]

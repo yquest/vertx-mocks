@@ -1,4 +1,288 @@
-ext{
+import groovyx.net.http.HttpBuilder
+import org.apache.tools.ant.filters.ReplaceTokens
+
+import java.util.function.Consumer
+import java.util.function.Function
+import java.util.stream.Collectors
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'io.github.http-builder-ng:http-builder-ng-apache:1.0.3'
+    }
+}
+
+enum TestType {
+    DOCKER('docker'),
+    SAME_VM('same-vm'),
+    OTHER_VM('other-vm'),
+    NONE('none');
+    final static PROPERTY_NAME = 'test-type'
+    String label
+
+    static TestType fromProperty(Project project) {
+        String current = project.getProperties().get(PROPERTY_NAME)
+        return values().find { it.label == current } ?: SAME_VM
+    }
+
+    private TestType(String label) {
+        this.label = label
+    }
+}
+
+TestType tt = TestType.fromProperty(project)
+
+ext {
     junitJupiterEngineVersion = '5.4.0'
-    vertxVersion='3.9.0'
+    vertxVersion = '3.9.1'
+    jre = 'java'
+    resourcesDir = "$rootDir/resources".toString()
+    resourcesBuildDir = mkdir("$resourcesDir/build")
+    coverage = false
+    jacocoExec = coverage ? "${resourcesBuildDir}/app/jacoco/jacoco-it.exec".toString() : null
+    //test type possibilities same-vm, other-vm, docker
+    sameVm = tt == TestType.SAME_VM
+    app = [
+            args  : [
+                    'web'   : 8002,
+                    'telnet': 8003
+            ],
+            system: [
+                    'vertx.logger-delegate-factory-class-name': 'io.vertx.core.logging.SLF4JLogDelegateFactory',
+                    'PATH_TO_SAVE_SERVICES_MAP'               : 'temp/map.json',
+                    'logback.configurationFile'               : 'conf/logback.xml',
+                    'io.netty.tryReflectionSetAccessible'     : "true"
+            ]
+    ]
+}
+
+List<String> java8Projects = ['app', 'example-route', 'example-server']
+
+private getAppProject() {
+    project(':app')
+}
+
+subprojects({ current ->
+    current.repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    if (java8Projects.contains(current.name)) {
+        current.apply('plugin': 'java')
+        current.sourceCompatibility = 1.8
+        current.sourceCompatibility = 1.8
+    }
+    if (current.name == 'app' && coverage) {
+        current.apply('plugin': 'jacoco')
+    }
+
+} as Action)
+
+task copyAgent(type: Copy) {
+    if (coverage) {
+        from(zipTree(appProject.configurations.jacocoAgent.singleFile), {
+            include '**/jacocoagent.jar'
+            includeEmptyDirs = false
+        } as Action)
+        rename '.*', 'agent.jar'
+        into "$resourcesBuildDir/app"
+    }
+}
+
+task stopAppTests(group: 'application') {
+    doLast({
+        HttpBuilder http = HttpBuilder.configure({ conf ->
+            conf.request.uri = "http://localhost:${app.args.web}"
+        } as Consumer)
+        http.get({ conf ->
+            conf.request.uri.path = '/stop'
+            conf.response.exception({ Throwable t ->
+                if (t instanceof ConnectException) {
+                    println t.cause
+                }
+                println(t.class)
+            } as Function)
+        } as Consumer)
+        println 'stopped'
+    } as Action)
+}
+
+
+task dockerBuildCentosJdk(type: Copy, group: 'docker') {
+    from("$resourcesDir/Dockerfile")
+    into(resourcesBuildDir)
+    doLast({
+        exec({
+            it.workingDir resourcesBuildDir
+            it.commandLine 'docker', 'build', '.', '--target', 'centos-jdk', '-t', 'base-app'
+        } as Action)
+    } as Action)
+}
+
+task('clean', group: 'build').doFirst({
+    delete resourcesBuildDir
+} as Action)
+
+task copyAppDependencies(type: Copy) {
+    Project appProject = project.project(':app')
+    from appProject.configurations.compileClasspath, appProject.jar as CopySpec
+    into "$resourcesBuildDir/app/libs"
+}
+
+task copyConf(type: Copy) {
+    from("$resourcesDir/conf")
+    into("$resourcesBuildDir/app/conf")
+    filter({
+        it
+                .replace('${web.port}', app.args.web.toString())
+                .replace('${telnet.port}', app.args.telnet.toString())
+    } as Transformer)
+}
+task copyExampleServer(type: Copy, group: 'copy') {
+    from project.project(':example-server').getTasksByName('jar', false)
+    into "$resourcesBuildDir/app/verticles"
+}
+task copyRouteJava(type: Copy, group: 'copy') {
+    from project.project(':example-route').getTasksByName('jar', false)
+    into "$resourcesBuildDir/app/verticles"
+}
+
+task copyRouteGroovy(type: Copy, group: 'copy') {
+    from "${project(':groovy-script-example').projectDir}/src/main/resources"
+    include('*.groovy')
+    into "$resourcesBuildDir/app/verticles"
+}
+
+task doExec(group: 'application') {
+    doLast({
+        Project appProject = it.project.project('app')
+        List<String> libs = it.project.project('app').configurations.compileClasspath.files*.name +
+                appProject.tasks.findByPath('jar').outputs.files.singleFile.name as List<String>
+
+        String jacocoArgs = coverage ? ' -javaagent:agent.jar=destfile=jacoco/jacoco-it.exec' : ''
+        def tokensMap = [
+                jre           : jre,
+                classReference: 'pt.fabm.Main conf/conf.yaml',
+                libs          : libs.stream().map { "libs/$it" }.collect(Collectors.joining(":")),
+                jacocoArgs    : jacocoArgs,
+                jvmArgs       : app.system
+                        .entrySet()
+                        .stream()
+                        .map { "-D${it.key}=${it.value}" }
+                        .collect(Collectors.joining(' '))
+        ]
+        copy({
+            it.from("$resourcesDir/app.tpl")
+            it.filter ReplaceTokens, tokens: tokensMap
+            it.rename '(.*)\\.tpl', '$1.sh'
+            it.into "${resourcesBuildDir}/app"
+        } as Action)
+
+    } as Action)
+}
+
+task createTmpDir(type: Copy) {
+    if (coverage) {
+        mkdir("$resourcesBuildDir/app/jacoco")
+    }
+    from "$resourcesDir/temp"
+    into "$resourcesBuildDir/app/temp"
+}
+
+task copyVerticles(dependsOn: [copyExampleServer, copyRouteJava, copyRouteGroovy])
+
+task distCopy(dependsOn: [copyConf, copyAppDependencies, doExec, createTmpDir, copyVerticles, copyAgent], group: 'copy')
+
+task runAppSync(type: JavaExec, group: 'application', dependsOn: [':app:jar', createTmpDir, copyConf, copyVerticles]) {
+    description = 'launch app synchronously'
+
+    main = 'pt.fabm.Main'
+    args 'conf/conf.yaml'
+    classpath = appProject.sourceSets.main.runtimeClasspath
+
+    app.system.forEach { String k, v -> systemProperty(k, v) }
+    workingDir file("$resourcesBuildDir/app")
+
+}
+
+task runAppAsync(group: 'application', dependsOn: [distCopy, createTmpDir, copyVerticles]) {
+    description = 'launch app assynchronously'
+    doLast({
+        ProcessBuilder processBuilder = new ProcessBuilder(['sh', 'app.sh'])
+        File outputFile = file("$resourcesBuildDir/out.log")
+        processBuilder.directory(file("$resourcesBuildDir/app"))
+        processBuilder.redirectOutput(outputFile)
+        processBuilder.redirectOutput()
+        processBuilder.start()
+    } as Action)
+}
+
+task dist(type: Tar, dependsOn: distCopy) {
+    from("$resourcesBuildDir/app")
+    into('/')
+    destinationDirectory = resourcesBuildDir
+    archiveFileName = 'app.tar'
+}
+
+task copyDockerCompose(type: Copy, group: 'docker', dependsOn: dist) {
+    from("$resourcesDir/docker-compose.yaml", "$resourcesDir/Dockerfile")
+    into(resourcesBuildDir)
+    eachFile({ fileSpec ->
+        if (fileSpec.name == 'docker-compose.yaml') {
+            fileSpec.filter({
+                it
+                        .replace('${web.port}', app.args.web.toString())
+                        .replace('${telnet.port}', app.args.telnet.toString())
+            } as Transformer)
+        }
+    } as Action)
+}
+
+task dockerStop(type: Exec, group: 'docker') {
+    dependsOn(stopAppTests)
+    workingDir resourcesBuildDir
+    commandLine 'docker-compose', 'down', '--rmi', 'all'
+}
+
+task dockerRun(group: 'docker', dependsOn: copyDockerCompose) {
+    doLast({
+        exec({
+            it.workingDir resourcesBuildDir
+            it.commandLine 'docker-compose', 'up', '--build', '-d'
+        } as Action)
+    } as Action)
+}
+
+if (coverage) {
+    appProject.test {
+        jacoco {
+            destinationFile = file(jacocoExec)
+        }
+    }
+}
+
+def functionalTestTask = project('functional-tests').getTasksByName('test', false).first()
+switch (tt) {
+    case TestType.SAME_VM:
+        functionalTestTask.dependsOn([distCopy, copyVerticles, createTmpDir])
+        if (coverage) {
+            functionalTestTask.finalizedBy(appProject.getTasksByName('jacocoTestReport', true))
+        }
+        break
+    case TestType.OTHER_VM:
+        functionalTestTask.dependsOn(runAppAsync)
+        if (coverage) {
+            stopAppTests.finalizedBy(appProject.getTasksByName('jacocoTestReport', true))
+        }
+        functionalTestTask.finalizedBy(stopAppTests)
+        break
+    case TestType.DOCKER:
+        functionalTestTask.dependsOn(dockerRun)
+        if (coverage) {
+            dockerStop.dependsOn(appProject.getTasksByName('jacocoTestReport', true))
+        }
+        functionalTestTask.finalizedBy(dockerStop)
+        break
 }

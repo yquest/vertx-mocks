@@ -1,0 +1,7 @@
+web:
+  host: localhost
+  port: 8002
+telnet:
+  host: localhost
+  port: 8003
+verticles: conf/verticles.json

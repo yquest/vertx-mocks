@@ -1,0 +1,19 @@
+version: '3.4'
+services:
+  app:
+    image: app
+    build:
+      context: .
+      target: app
+    ports:
+      - "${web.port}:${web.port}"
+      - "${telnet.port}:${telnet.port}"
+    command: ["sh","app.sh"]
+    volumes:
+      - ./app/verticles:/app/verticles
+      - ./app/jacoco:/app/jacoco
+      - ./app/logs:/app/logs
+
+
+
+

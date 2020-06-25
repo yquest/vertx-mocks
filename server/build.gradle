@@ -1,0 +1,51 @@
+plugins {
+    id 'maven-publish'
+    id 'java'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/yquest/vertx-service-load")
+            credentials {
+                username = rootProject.property('githubUser')
+                password = rootProject.property('githubToken')
+            }
+        }
+    }
+    publications({
+        maven(MavenPublication) {
+            groupId = 'pt.fabm.services'
+            artifactId = 'server'
+            version = '0.1'
+
+            from components.java
+        }
+    })
+}
+
+dependencies {
+    compileOnly "io.vertx:vertx-codegen:$vertxVersion"
+    compile 'com.google.dagger:dagger:2.4'
+    annotationProcessor "com.google.dagger:dagger-compiler:2.4"
+
+    compile "io.vertx:vertx-config:$vertxVersion"
+    compile "io.vertx:vertx-config-yaml:$vertxVersion"
+    compile "io.vertx:vertx-service-factory:$vertxVersion"
+    compile "io.vertx:vertx-lang-groovy:$vertxVersion"
+    compile "io.vertx:vertx-shell:$vertxVersion"
+    compile 'ch.qos.logback:logback-core:1.2.3'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+
+    testImplementation "io.vertx:vertx-web-client:$vertxVersion"
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.28.2'
+    testImplementation group: 'io.vertx', name: 'vertx-junit5', version: vertxVersion
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
+}

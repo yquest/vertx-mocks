@@ -1,18 +1,11 @@
-plugins {
-    id 'java'
-}
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    runtime "io.vertx:vertx-lang-groovy:$vertxVersion"
+    runtimeOnly "io.vertx:vertx-lang-groovy:$vertxVersion"
     compileOnly "io.vertx:vertx-shell:$vertxVersion"
-    runtime 'ch.qos.logback:logback-core:1.2.3'
-    runtime 'ch.qos.logback:logback-classic:1.2.3'
+    compileOnly "io.vertx:vertx-codegen:$vertxVersion"
+    runtimeOnly 'ch.qos.logback:logback-core:1.2.3'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 
-    testImplementation group: 'io.vertx', name:'vertx-junit5', version: '3.8.5'
-    testRuntime 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation group: 'io.vertx', name: 'vertx-junit5', version: '3.8.5'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
 }

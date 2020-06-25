@@ -1,0 +1,68 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'io.github.http-builder-ng:http-builder-ng-apache:1.0.3'
+    }
+}
+plugins {
+    id 'groovy'
+    id 'java'
+}
+
+sourceCompatibility = 1.8
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+task generateServerScript() {
+    doLast({
+        def path = "${buildDir}/generated/src/test/groovy"
+        mkdir(path)
+        def file = file("$path/ServerScript.groovy")
+        StringBuilder sb = new StringBuilder()
+        if (sameVm) {
+            sb << '''pt.fabm.Main.main('conf/conf.yaml')\n'''
+        }
+        sb << """static int getWebport(){ return ${app.args.web} }"""
+        file.text = sb.toString()
+    } as Action)
+}
+
+sourceSets {
+    test {
+        groovy.srcDir "${buildDir}/generated/src/test/groovy"
+    }
+}
+
+compileTestGroovy.dependsOn(generateServerScript)
+if (sameVm) {
+    if (coverage) {
+        apply(plugin: 'jacoco')
+    }
+    test {
+        app.system.each { Map.Entry<String, String> entry ->
+            systemProperty(entry.key, entry.value)
+        }
+        workingDir(file("$resourcesBuildDir/app"))
+        if (coverage) {
+            jacoco {
+                destinationFile = file(jacocoExec)
+            }
+        }
+    }
+}
+dependencies {
+    if (sameVm) {
+        testImplementation project(':app')
+    }
+    testImplementation group: 'commons-net', name: 'commons-net', version: '3.6'
+    testImplementation 'io.github.http-builder-ng:http-builder-ng-apache:1.0.3'
+    testImplementation 'org.codehaus.groovy:groovy-all:2.5.7'
+    testImplementation 'org.spockframework:spock-core:1.3-groovy-2.5'
+    testImplementation group: 'com.jcraft', name: 'jsch', version: '0.1.55'
+}
